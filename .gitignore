@@ -1,0 +1,6 @@
+__pycache__/
+build/
+.streamlit/
+*.zip
+*.pyc
+.DS_Store
