@@ -141,6 +141,8 @@ def _ensure_data_rows_span(tbl, data_start: int, needed: int):
     for _ in range(to_add):
         _insert_row_before(tbl, len(tbl.rows) - FOOTER_ROW_COUNT)  
 
+        import re
+
 # Words to keep lowercase unless first/last in the title
 _SMART_LOWER = {
     "a","an","and","as","at","but","by","for","from","in","into","nor","of",
@@ -189,13 +191,6 @@ def _smart_title_case(title: str) -> str:
 
     core_tc = "".join(words)
     return (core_tc + suffix)
-
-
-def _std_special_title(title: str) -> str:
-    """Preserve weekly title for the Standard supper special, but normalise any '(Ve)' to '(V)'."""
-    t = (title or "").strip()
-    return re.sub(r"\(ve\)", "(V)", t, flags=re.I)
-
   
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -370,7 +365,7 @@ def parse_week(weekly_docx_path: str) -> Dict[str, Any]:
     themes = [cell(2, c + 1).strip() for c in range(7)]
 
     # BEFORE
-    interesting_rows = [3,4,5,6,7,8,9,10,12,13,14,15,16,17]
+    interesting_rows = [3,4,5,6,7,8,9,10,12,15,16,17]
 
     # AFTER  (add 13 and 14 so supper vegan + selection are available)
     interesting_rows = [3,4,5,6,7,8,9,10,12,13,14,15,16,17]
@@ -482,7 +477,7 @@ def build_standard_context(day: Dict[str, Any]) -> Dict[str, Any]:
         "supper": {
             "starter": supper_starter,
             "selection": {"allergens": "Sulphites, Gluten, Mustard, Soya"},
-            "specials": {"title": _smart_title_case(_std_special_title(sp.get("title",""))), "description": sp.get("description",""), "allergens": sp.get("allergens","")},
+            "specials": {"title": _smart_title_case(sp.get("title","")), "description": sp.get("description",""), "allergens": sp.get("allergens","")},
             "desserts": [
                 {"title": sd0_title, "allergens": src["supper"]["desserts"][0]["allergens"]},
                 {"title": src["supper"]["desserts"][1]["title"], "allergens": sd1_all},
