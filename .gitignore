@@ -1,6 +1,13 @@
+# Python / build
 __pycache__/
-build/
-.streamlit/
-*.zip
 *.pyc
+build/
+*.zip
+
+# Local-only stuff
+.venv/
+.vscode/
 .DS_Store
+
+# Streamlit config
+.streamlit/
