@@ -418,9 +418,9 @@ def build_vegan_context(day: Dict[str, Any]) -> Dict[str, Any]:
 
     # --- LUNCH mains (vegan) --------------------------------------------------
     vmain  = src["lunch"]["vegan_main"]   # weekly vegan main row (r5)
-    vegstd = src["lunch"]["veg_main"]     # standard vegetarian row (r6) — for fallback description
+    vegstd = src["lunch"]["veg_main"]     # Standard vegetarian row (r6) — for fallback desc
 
-    # Title/allergens from vegan row, but guard against weekly cells that put the title on allergens line
+    # Title/allergens from vegan row, guard against title dumped in allergens
     v_title_raw = vmain.get("title", "") or ""
     v_all_raw   = vmain.get("allergens", "") or ""
     if "(ve" in v_all_raw.lower() or re.search(r"[A-Za-z].+\(ve\)", v_all_raw, re.I):
@@ -450,15 +450,32 @@ def build_vegan_context(day: Dict[str, Any]) -> Dict[str, Any]:
     supper_soup_title = _yellow("Chef’s choice soup (Ve)")
     supper_soup_all   = _remove_tokens_from_csv(starters[0].get("allergens", ""))
 
-    # --- SUPPER special (vegan) ----------------------------------------------
+    # --- SUPPER special (vegan) — apply SAME safety net as lunch main ---------
     sp_std = src["supper"]["specials"]                 # standard row (r16)
     sp_veg = src["supper"].get("vegan_special", {})    # vegan row (r14)
-    veg_special_title = add_suffix(strip_suffixes(sp_veg.get("title", "")), "(Ve)")
+
+    vs_title_raw = sp_veg.get("title", "") or ""
+    vs_all_raw   = sp_veg.get("allergens", "") or ""
+
+    # SAFETY NET: if weekly cell dumped the '(Ve)' dish title into the allergens line, recover it
+    if "(ve" in vs_all_raw.lower() or re.search(r"[A-Za-z].+\(ve\)", vs_all_raw, re.I):
+        m = re.search(r"([A-Za-z].*?\(ve\))", vs_all_raw, flags=re.I)
+        if m and len(strip_suffixes(vs_title_raw)) < 2:
+            vs_title_raw = m.group(1).strip()
+        vs_all_raw = re.sub(r"[A-Za-z].*?\(ve\)\s*", "", vs_all_raw, flags=re.I).strip()
+
+    # If vegan title still empty, fall back to extracting a vegan variant from the standard title/desc
+    if not vs_title_raw.strip():
+        vs_title_raw = add_suffix(strip_suffixes(
+            pick_vegan_variant(sp_std.get("title",""), sp_std.get("description",""))
+        ), "(Ve)")
+
+    veg_special_title = add_suffix(strip_suffixes(vs_title_raw), "(Ve)")
     veg_special_desc  = (sp_veg.get("description", "") or "").strip()
     if not veg_special_desc:
         borrowed = (sp_std.get("description", "") or "").strip()
         veg_special_desc = _yellow(borrowed) if borrowed else ""     # highlight borrowed supper description
-    veg_special_all   = _remove_tokens_from_csv(sp_veg.get("allergens", ""))
+    veg_special_all   = _remove_tokens_from_csv(vs_all_raw)
 
     # SUPPER desserts
     supper_dessert_title = _yellow(sentence_case(strip_suffixes(src["supper"]["desserts"][0]["title"])) + " (Ve)")
