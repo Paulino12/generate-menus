@@ -120,6 +120,27 @@ def pretty_month_banner(d: dt.date) -> str:
     """Allergens header banner, e.g. '18 September 2025' (no ordinal suffix)."""
     return f"{d.day} {d.strftime('%B %Y')}"
 
+# Keep the last N rows (legend) intact at the bottom of the allergens table
+FOOTER_ROW_COUNT = 2
+
+def _insert_row_before(tbl, idx: int):
+    """Insert a blank row before row index `idx` (0-based). Preserves table styles."""
+    from docx.table import _Row
+    tr = tbl.rows[0]._tr.__class__()   # new <w:tr/>
+    tbl._tbl.insert(idx, tr)
+    return _Row(tr, tbl)
+
+def _ensure_data_rows_span(tbl, data_start: int, needed: int):
+    """
+    Ensure there are at least `needed` data rows between data_start and the footer.
+    Only inserts rows BEFORE the last FOOTER_ROW_COUNT rows so the footer stays intact.
+    """
+    footer_start = len(tbl.rows) - FOOTER_ROW_COUNT
+    current_data = max(0, footer_start - data_start)
+    to_add = max(0, needed - current_data)
+    for _ in range(to_add):
+        _insert_row_before(tbl, len(tbl.rows) - FOOTER_ROW_COUNT)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Allergens mapping / parsing
 # ──────────────────────────────────────────────────────────────────────────────
@@ -627,44 +648,77 @@ def _collect_allergen_items_for_table(day: dict, std_ctx: dict, veg_ctx: dict) -
     return items
 
 def render_allergens_doc(day: dict, std_ctx: dict, veg_ctx: dict, allergens_tpl_path: str) -> Document:
-    """Open allergens template, replace month banner, fill table, return Document."""
+    """Open allergens template, replace month banner, fill table rows ABOVE the footer, return Document."""
     doc = Document(allergens_tpl_path)
-    # date banner
+
+    # ---- Update month banner everywhere (paragraphs + inside table cells) ----
     d = dt.date.fromisoformat(day["header"]["date_iso"])
     banner = pretty_month_banner(d)
 
     def _replace_in_paragraph(p, old: str, new: str):
-        if old not in p.text: return
+        if old not in p.text:
+            return
         text = p.text.replace(old, new)
-        if not p.runs: p.add_run(text); return
+        if not p.runs:
+            p.add_run(text)
+            return
         p.runs[0].text = text
-        for r in p.runs[1:]: r.text = ""
+        for r in p.runs[1:]:
+            r.text = ""
 
-    for p in doc.paragraphs: _replace_in_paragraph(p, "September 2025", banner)
-    for tbl in doc.tables:
-        for row in tbl.rows:
+    for p in doc.paragraphs:
+        _replace_in_paragraph(p, "September 2025", banner)
+    for t in doc.tables:
+        for row in t.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
                     _replace_in_paragraph(p, "September 2025", banner)
 
+    # ---- Locate allergens table & columns ----
     tbl, header_row_idx, title_col, col_map = _find_allergen_table(doc)
+
+    # Data band is between header and footer; footer is last FOOTER_ROW_COUNT rows
     data_row_start = header_row_idx + 1
+    footer_start = len(tbl.rows) - FOOTER_ROW_COUNT
+    if footer_start <= data_row_start:
+        raise RuntimeError("Allergens table too short: no space above footer rows.")
+
+    # Collect rows to write (Standard then Vegan, including section headings)
     rows = _collect_allergen_items_for_table(day, std_ctx, veg_ctx)
+    needed = len(rows)
 
-    # write rows (leave unused rows blank)
-    max_rows = len(tbl.rows) - data_row_start
-    for i in range(max_rows):
-        r = tbl.rows[data_row_start + i]
-        for c in r.cells: _clear_cell(c)
-        if i >= len(rows): continue
-        title, cols, is_heading = rows[i]
+    # Ensure there is enough room ABOVE the footer; insert rows just before the footer if needed
+    _ensure_data_rows_span(tbl, data_row_start, needed)
+
+    # Recompute footer start (table may have grown)
+    footer_start = len(tbl.rows) - FOOTER_ROW_COUNT
+
+    # ---- Clear current data rows (keep header; DO NOT touch the footer) ----
+    for r_idx in range(data_row_start, footer_start):
+        r = tbl.rows[r_idx]
+        for c in r.cells:
+            _clear_cell(c)  # your helper that empties text but preserves styles
+
+    # ---- Write our rows, stopping before the footer ----
+    write_row = data_row_start
+    for item in rows:
+        if write_row >= footer_start:
+            break  # safety: never spill into the footer
+        title, cols, is_heading = item
+        r = tbl.rows[write_row]
+
         if is_heading:
-            _set_text(r.cells[title_col], title, center=True, bold=True); continue
-        _set_text(r.cells[title_col], title)
-        for c_idx, templ_name in col_map.items():
-            if templ_name in cols:
-                _set_tick(r.cells[c_idx])
+            _set_text(r.cells[title_col], title, center=True, bold=True)
+        else:
+            _set_text(r.cells[title_col], title)
+            # tick the appropriate allergen columns by canonical names
+            for c_idx, templ_name in col_map.items():
+                if templ_name in cols:
+                    _set_tick(r.cells[c_idx])   # your helper that places a ✔ (or similar)
 
+        write_row += 1
+
+    # Any unused data rows above the footer remain blank (do not delete), preserving footer indices.
     return doc
 
 # ──────────────────────────────────────────────────────────────────────────────
