@@ -19,10 +19,15 @@ _allow_origins = os.getenv("ALLOW_ORIGINS", "*").split(",")
 app = FastAPI(title="Henbrook Menus API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _allow_origins],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://chef-context.maryoctav.com",  # prod
+        "https://*.vercel.app",],
+    # allow_origins=[o.strip() for o in _allow_origins],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],  # <-- IMPORTANT
 )
 
 # ----------- Simple upload form (handy for quick manual tests) -----------
