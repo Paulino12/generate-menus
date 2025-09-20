@@ -1,0 +1,10 @@
+[theme]
+base="light"
+primaryColor="#5e4ae3"      # buttons/accents
+backgroundColor="#ffffff"
+secondaryBackgroundColor="#f6f7fb"
+textColor="#1f2937"
+font="sans serif"           # options: "sans serif", "serif", "monospace"
+
+[server]
+maxUploadSize = 200

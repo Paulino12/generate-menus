@@ -5,10 +5,10 @@ Generate resident-friendly **daily menus** and an **allergens sheet** from a sin
 - ✅ Standard, Vegan, and Allergens DOCXs rendered from your templates
 - ✅ Styles preserved (fonts, weights, colours, layout stay as in the templates)
 - ✅ Streamlit web UI or CLI
-- ✅ Output naming (fixed):  
-  - `Residents_DD-MM-YYYY.docx`  
-  - `Residents_DD-MM-YYYY_vegan.docx`  
-  - `Allergens_Residents_DD-MM-YYYY.docx`  
+- ✅ Output naming (fixed):
+  - `Residents_DD-MM-YYYY.docx`
+  - `Residents_DD-MM-YYYY_vegan.docx`
+  - `Allergens_Residents_DD-MM-YYYY.docx`
   - Packaged as `Day-DD-MM-YYYY-menus-and-allergens.zip`
 
 ---
@@ -65,6 +65,7 @@ streamlit run app.py
 ```
 
 Steps:
+
 1. Upload the **weekly menu DOCX**.
 2. (Optional) Upload custom templates or use those in `./templates`.
 3. Choose **one day** (pick a date) or **all 7 days**.
@@ -77,17 +78,21 @@ Hosted version: https://paulino12-generate-menus-app-jl3nqs.streamlit.app/
 ## CLI usage
 
 ### Windows PowerShell
+
 Generate **one day**:
+
 ```powershell
 python .\generate_menus.py --weekly ".\examples\Residents Menu WC 15-09-2025.docx" --date 2025-09-18 --templates ".	emplates" --out ".uild"
 ```
 
 Generate **all 7 days**:
+
 ```powershell
 python .\generate_menus.py --weekly ".\examples\Residents Menu WC 15-09-2025.docx" --all-days --templates ".	emplates" --out ".uild"
 ```
 
 Explicit template paths:
+
 ```powershell
 python .\generate_menus.py `
   --weekly ".\examples\Residents Menu WC 15-09-2025.docx" `
@@ -101,6 +106,7 @@ python .\generate_menus.py `
 > PowerShell line continuation uses the **backtick** (`).
 
 ### Windows CMD
+
 ```bat
 python generate_menus.py ^
   --weekly "examples\Residents Menu WC 15-09-2025.docx" ^
@@ -110,6 +116,7 @@ python generate_menus.py ^
 ```
 
 ### macOS / Linux (bash/zsh)
+
 ```bash
 python3 generate_menus.py   --weekly "examples/Residents Menu WC 15-09-2025.docx"   --all-days   --templates "./templates"   --out "./build"
 ```
