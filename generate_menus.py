@@ -668,7 +668,8 @@ def _collect_allergen_items_for_table(day: dict, std_ctx: dict, veg_ctx: dict) -
     add(src["lunch"]["meat_main"].get("title",""), src["lunch"]["meat_main"].get("allergens",""))
     add(src["lunch"]["optional_sides"].get("title",""), src["lunch"]["optional_sides"].get("allergens",""))
     add(std_ctx["lunch"]["desserts"][0]["title"], std_ctx["lunch"]["desserts"][0]["allergens"])
-    add("Chef’s choice soup (V)", src["supper"]["starter"]["allergens"])
+    #add("Chef’s choice soup (V)", src["supper"]["starter"]["allergens"])
+    add("Chef’s choice soup (V)", src["lunch"]["starters"][0].get("allergens",""))
     add(std_ctx["supper"]["specials"]["title"], std_ctx["supper"]["specials"]["allergens"])
     add(std_ctx["supper"]["desserts"][0]["title"], std_ctx["supper"]["desserts"][0]["allergens"])
 
@@ -696,8 +697,8 @@ def _collect_allergen_items_for_table(day: dict, std_ctx: dict, veg_ctx: dict) -
         "Gluten, Nuts, Soya, Sulphites", force_vegan_dessert=True)
 
     # 5) Supper soup (Ve) – only once (use supper soup allergens, scrubbed)
-    add("Chef’s choice soup (Ve)", _scrub_vegan_csv_to_canonset(src["supper"]["starter"]["allergens"]))
-
+    #add("Chef’s choice soup (Ve)", _scrub_vegan_csv_to_canonset(src["supper"]["starter"]["allergens"]))
+    add("Chef’s choice soup (Ve)", _scrub_vegan_csv_to_canonset(src["lunch"]["starters"][0].get("allergens","")))
     # 6) SUPPER special — use vegan row (r14), scrubbed
     add(
         add_suffix(strip_suffixes(src["supper"]["vegan_special"].get("title","")), "(Ve)"),
